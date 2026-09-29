@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import "dotenv/config";
+import TokenBlacklist from "../models/blacklist.model.js";
 
 /**
  * @name registerUserController
@@ -104,7 +105,52 @@ const loginUserController = async (req, res) => {
     }
 };
 
+
+/**
+ * @name loginUserController
+ * @description clear token from user cookie and add the token in blacklist
+ * @access Public
+ */
+const logoutUserController = async (req, res) => {
+    try {
+        const token = req.cookies.token;
+
+        if (token) {
+            await TokenBlacklist.create({ token });
+        }
+
+        res.clearCookie("token");
+
+        res.status(200).json({ message: "logged out succesfully" });
+    } catch (error) {
+        res.status(400).json({ message: "Error while logging out", error });
+    }
+};
+
+
+/**
+ * @name getMeController
+ * @description get the current logged in user details
+ * @access Private
+ */
+const getMeController = async (req, res) => {
+    const user = await User.findById(req.user.id);
+
+    res.status(200).json(
+        {
+            message: "User data fetched successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        }
+    );
+};
+
 export default {
     registerUserController,
     loginUserController,
+    logoutUserController,
+    getMeController
 }
